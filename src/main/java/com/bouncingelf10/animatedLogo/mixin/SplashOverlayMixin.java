@@ -24,6 +24,7 @@ import java.util.function.IntSupplier;
 import static com.bouncingelf10.animatedLogo.AnimatedLogo.LOGGER;
 
 @Mixin(SplashOverlay.class)
+@SuppressWarnings({"FieldMayBeFinal","unused"})
 public class SplashOverlayMixin {
     @Mutable
     @Shadow @Final private ResourceReload reload;
@@ -236,7 +237,6 @@ public class SplashOverlayMixin {
         }
     }
 
-    // TODO
     @Inject(method = "render", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/gui/DrawContext;drawTexture(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/util/Identifier;IIFFIIIIIII)V",
             ordinal = 1, shift = At.Shift.AFTER))
