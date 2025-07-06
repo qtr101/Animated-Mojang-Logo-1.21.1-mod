@@ -3,6 +3,7 @@ package com.bouncingelf10.animatedLogo.mixin;
 import com.bouncingelf10.animatedLogo.AnimatedLogo;
 import com.bouncingelf10.animatedLogo.DarkLoadingScreenCompat;
 import com.llamalad7.mixinextras.sugar.Local;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.SplashOverlay;
@@ -22,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.IntSupplier;
 
 import static com.bouncingelf10.animatedLogo.AnimatedLogo.LOGGER;
+import static net.minecraft.util.math.ColorHelper.Abgr.withAlpha;
 
 @Mixin(SplashOverlay.class)
 @SuppressWarnings({"unused", "FieldMayBeFinal"})
@@ -43,7 +45,7 @@ public class SplashOverlayMixin {
     @Final
     private static IntSupplier BRAND_ARGB; // Color of background
     @Unique
-    private static int whiteARGB = ColorHelper.getArgb(255, 255, 255, 255);
+    private static int whiteARGB = ColorHelper.Argb.getArgb(255, 255, 255, 255);
 
     @Unique
     private static IntSupplier LOADING_FILL = () ->
@@ -107,15 +109,9 @@ public class SplashOverlayMixin {
 
     // Stop rendering of title
     @ModifyArg(method = "render",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawTexture(Ljava/util/function/Function;Lnet/minecraft/util/Identifier;IIFFIIIIIII)V", ordinal = 0),
-            index = 7)
-    private int removeText1(int i) {
-        return 0;
-    }
-    @ModifyArg(method = "render",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;drawTexture(Ljava/util/function/Function;Lnet/minecraft/util/Identifier;IIFFIIIIIII)V", ordinal = 1),
-            index = 7)
-    private int removeText2(int u) {
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/DrawContext;setShaderColor(FFFF)V", ordinal = 0),
+            index = 3)
+    private float removeText(float red) {
         return 0;
     }
 
@@ -135,7 +131,7 @@ public class SplashOverlayMixin {
         if (elapsed < ANIMATION_DELAY_MS) {
             context.fill(RenderLayer.getGuiOverlay(), 0, 0,
                     context.getScaledWindowWidth(), context.getScaledWindowHeight(),
-                    ColorHelper.withAlpha((int)((elapsed * 255) / ANIMATION_DELAY_MS / 10),
+                    withAlpha((int)((elapsed * 255) / ANIMATION_DELAY_MS / 10),
                             applyAlphaToColor(BRAND_ARGB.getAsInt(), 1.0f)));
             ci.cancel();
             return;
@@ -231,14 +227,21 @@ public class SplashOverlayMixin {
                     context.getScaledWindowWidth(), context.getScaledWindowHeight(),
                     applyAlphaToColor(BRAND_ARGB.getAsInt(), 1.0f));
 
-            context.drawTexture(RenderLayer::getGuiTextured, frames[frameIndex], x, y,
-                    0, subFrameY, width, height,
-                    1024, 256, 1024, 1024, applyAlphaToColor(TEXT_COLOR.getAsInt(), 1.0f));
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+            context.drawTexture(
+                    frames[frameIndex],
+                    x,
+                    y,
+                    0, subFrameY,
+                    width, height,
+                    1024, 1024
+            );
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
     }
 
     @Inject(method = "render", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/DrawContext;drawTexture(Ljava/util/function/Function;Lnet/minecraft/util/Identifier;IIFFIIIIIII)V",
+            target = "Lnet/minecraft/client/gui/DrawContext;drawTexture(Lnet/minecraft/util/Identifier;IIIIFFIIII)V",
             ordinal = 1, shift = At.Shift.AFTER))
     private void onAfterRenderLogo(DrawContext context, int mouseX, int mouseY, float delta, CallbackInfo ci,
                                    @Local(ordinal = 2) int scaledWidth, @Local(ordinal = 3) int scaledHeight,
@@ -252,9 +255,16 @@ public class SplashOverlayMixin {
         if (progress >= 0.8) {
             f = Math.min(alpha, f + 0.2f);
             int sw = (int) (width * 0.45);
-            context.drawTexture(RenderLayer::getGuiTextured, Identifier.of("animated-mojang-logo", "textures/gui/studios.png"),
-                    x - sw / 2, (int) (y - halfHeight + height - height / 12),
-                    0, 0, sw, (int) (height / 5.0), 450, 50, 512, 512, applyAlphaToColor(TEXT_COLOR.getAsInt(), f));
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, f);
+            context.drawTexture(
+                    Identifier.of("animated-mojang-logo", "textures/gui/studios.png"),
+                    x - sw / 2,
+                    (int) (y - halfHeight + height - height / 12),
+                    0, 0,
+                    sw, (int) (height / 5.0),
+                    512, 512
+            );
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
 
         // Title (last frame)
@@ -267,9 +277,16 @@ public class SplashOverlayMixin {
         int finalSubFrameY = 256 * ((count % (IMAGE_PER_FRAME * FRAMES_PER_FRAME)) / FRAMES_PER_FRAME);
 
         Identifier finalFrame = frames[FRAMES - 1];
-        context.drawTexture(RenderLayer::getGuiTextured, finalFrame, finalFrameX, finalFrameY,
-                0, finalSubFrameY, finalFrameWidth, finalFrameHeight,
-                1024, 256, 1024, 1024, applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha));
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, alpha);
+        context.drawTexture(
+                finalFrame,
+                finalFrameX,
+                finalFrameY,
+                0, finalSubFrameY,
+                finalFrameWidth, finalFrameHeight,
+                1024, 1024
+        );
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     @Unique
