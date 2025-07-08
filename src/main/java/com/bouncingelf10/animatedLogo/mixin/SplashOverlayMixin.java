@@ -247,11 +247,16 @@ public class SplashOverlayMixin {
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V",
-                    shift = At.Shift.AFTER
-            )
+                    target = "Lnet/minecraft/client/gui/screen/SplashOverlay;drawTexture(Lnet/minecraft/client/util/math/MatrixStack;IIIIFFIIII)V",
+                    shift = At.Shift.AFTER,
+                    ordinal = 1
+            ) // this had me scraching my head for a while T_T
     )
-    private void onAfterRenderLogo(MatrixStack matrices, int mouseX, int mouseY, float delta, CallbackInfo ci, @Local(ordinal = 3) float alpha) {
+    private void onAfterRenderLogo(MatrixStack matrices, int mouseX, int mouseY, float delta, CallbackInfo ci,
+                                   @Local(ordinal = 2) int scaledWidth, @Local(ordinal = 3) int scaledHeight,
+                                   @Local(ordinal = 3) float alpha, @Local(ordinal = 4) int x, @Local(ordinal = 5) int y,
+                                   @Local(ordinal = 0) double height, @Local(ordinal = 6) int halfHeight,
+                                   @Local(ordinal = 1) double width, @Local(ordinal = 7) int halfWidth) {
         if (!animationDone) return;
 
         // Studios.png
