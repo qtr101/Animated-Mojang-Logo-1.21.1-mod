@@ -2,6 +2,7 @@ package com.bouncingelf10.animatedLogo.mixin;
 
 import com.bouncingelf10.animatedLogo.AnimatedLogo;
 import com.bouncingelf10.animatedLogo.DarkLoadingScreenCompat;
+import com.llamalad7.mixinextras.sugar.Local;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.SplashOverlay;
@@ -17,6 +18,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.function.Consumer;
 import java.util.function.IntSupplier;
@@ -241,56 +243,57 @@ public class SplashOverlayMixin {
         }
     }
 
-//    @Inject(method = "render", at = @At(value = "INVOKE",
-//            target = "Lnet/minecraft/client/gui/screen/SplashOverlay;render(Lnet/minecraft/client/util/math/MatrixStack;IIF)V",
-//            ordinal = 1, shift = At.Shift.AFTER))
-//    private void onAfterRenderLogo(MatrixStack matrices, int mouseX, int mouseY, float delta, CallbackInfo ci,
-//                                   @Local(ordinal = 2) int scaledWidth, @Local(ordinal = 3) int scaledHeight,
-//                                   @Local(ordinal = 3) float alpha, @Local(ordinal = 4) int x, @Local(ordinal = 5) int y,
-//                                   @Local(ordinal = 0) double height, @Local(ordinal = 6) int halfHeight,
-//                                   @Local(ordinal = 1) double width, @Local(ordinal = 7) int halfWidth) {
-//        if (!animationDone) return;
-//
-//        // Studios.png
-//        float progress = MathHelper.clamp(this.progress * 0.95F + this.reload.getProgress() * 0.050000012F, 0.0F, 1.0F);
-//        if (progress >= 0.8) {
-//            f = Math.min(alpha, f + 0.2f);
-//            int sw = (int) (width * 0.45);
-//
-//            RenderSystem.setShaderTexture(0, Identifier.of("animated-mojang-logo", "textures/gui/studios.png"));
-//            RenderSystem.setShader(GameRenderer::getPositionTexShader);
-//            RenderSystem.setShaderColor(
-//                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 16) & 0xFF) / 255.0f,
-//                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 8) & 0xFF) / 255.0f,
-//                    (applyAlphaToColor(TEXT_COLOR.getAsInt(), f) & 0xFF) / 255.0f,
-//                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 24) & 0xFF) / 255.0f
-//            );
-//            drawTexture(matrices, x - sw / 2, (int) (y - halfHeight + height - height / 12), sw, (int) (height / 5.0), 0, 0, 450, 50, 512, 512);
-//            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-//        }
-//
-//        // Title (last frame)
-//        int finalFrameScreenWidth = MinecraftClient.getInstance().getWindow().getScaledWidth();
-//        int finalFrameScreenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
-//        int finalFrameWidth = finalFrameScreenWidth / 2;
-//        int finalFrameHeight = finalFrameWidth * 256 / 1024;
-//        int finalFrameX = (finalFrameScreenWidth - finalFrameWidth) / 2;
-//        int finalFrameY = (finalFrameScreenHeight - finalFrameHeight) / 2;
-//        int finalSubFrameY = 256 * ((count % (IMAGE_PER_FRAME * FRAMES_PER_FRAME)) / FRAMES_PER_FRAME);
-//
-//        Identifier finalFrame = frames[FRAMES - 1];
-//
-//        RenderSystem.setShaderTexture(0, finalFrame);
-//        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-//        RenderSystem.setShaderColor(
-//                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 16) & 0xFF) / 255.0f,
-//                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 8) & 0xFF) / 255.0f,
-//                (applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) & 0xFF) / 255.0f,
-//                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 24) & 0xFF) / 255.0f
-//        );
-//        drawTexture(matrices, finalFrameX, finalFrameY, finalFrameWidth, finalFrameHeight, 0, finalSubFrameY, 1024, 256, 1024, 1024);
-//        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-//    }
+    @Inject(
+            method = "render",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V",
+                    shift = At.Shift.AFTER
+            )
+    )
+    private void onAfterRenderLogo(MatrixStack matrices, int mouseX, int mouseY, float delta, CallbackInfo ci, @Local(ordinal = 3) float alpha) {
+        if (!animationDone) return;
+
+        // Studios.png
+        float progress = MathHelper.clamp(this.progress * 0.95F + this.reload.getProgress() * 0.050000012F, 0.0F, 1.0F);
+        if (progress >= 0.8) {
+            f = Math.min(alpha, f + 0.2f);
+            int sw = (int) (width * 0.45);
+
+            RenderSystem.setShaderTexture(0, Identifier.of("animated-mojang-logo", "textures/gui/studios.png"));
+            RenderSystem.setShader(GameRenderer::getPositionTexShader);
+            RenderSystem.setShaderColor(
+                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 16) & 0xFF) / 255.0f,
+                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 8) & 0xFF) / 255.0f,
+                    (applyAlphaToColor(TEXT_COLOR.getAsInt(), f) & 0xFF) / 255.0f,
+                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 24) & 0xFF) / 255.0f
+            );
+            drawTexture(matrices, x - sw / 2, (int) (y - halfHeight + height - height / 12), sw, (int) (height / 5.0), 0, 0, 450, 50, 512, 512);
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+
+        // Title (last frame)
+        int finalFrameScreenWidth = MinecraftClient.getInstance().getWindow().getScaledWidth();
+        int finalFrameScreenHeight = MinecraftClient.getInstance().getWindow().getScaledHeight();
+        int finalFrameWidth = finalFrameScreenWidth / 2;
+        int finalFrameHeight = finalFrameWidth * 256 / 1024;
+        int finalFrameX = (finalFrameScreenWidth - finalFrameWidth) / 2;
+        int finalFrameY = (finalFrameScreenHeight - finalFrameHeight) / 2;
+        int finalSubFrameY = 256 * ((count % (IMAGE_PER_FRAME * FRAMES_PER_FRAME)) / FRAMES_PER_FRAME);
+
+        Identifier finalFrame = frames[FRAMES - 1];
+
+        RenderSystem.setShaderTexture(0, finalFrame);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderColor(
+                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 16) & 0xFF) / 255.0f,
+                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 8) & 0xFF) / 255.0f,
+                (applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) & 0xFF) / 255.0f,
+                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 24) & 0xFF) / 255.0f
+        );
+        drawTexture(matrices, finalFrameX, finalFrameY, finalFrameWidth, finalFrameHeight, 0, finalSubFrameY, 1024, 256, 1024, 1024);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+    }
 
     @Unique
     private static int applyAlphaToColor(int color, float alpha) {
