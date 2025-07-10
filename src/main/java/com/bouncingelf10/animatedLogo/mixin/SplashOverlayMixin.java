@@ -50,10 +50,10 @@ public class SplashOverlayMixin {
 
     @Unique
     private static IntSupplier LOADING_FILL = () ->
-            applyAlphaToColor(DarkLoadingScreenCompat.getBarColor(whiteARGB), 1.0f);
+            DarkLoadingScreenCompat.getBarColor(whiteARGB);
     @Unique
     private static IntSupplier LOADING_BORDER = () ->
-            applyAlphaToColor(DarkLoadingScreenCompat.getBorderColor(whiteARGB), 1.0f);
+            DarkLoadingScreenCompat.getBorderColor(whiteARGB);
 
     @Unique
     private static IntSupplier TEXT_COLOR = () ->
@@ -93,8 +93,8 @@ public class SplashOverlayMixin {
         int maxY = progressBarY + 5;
 
         int filled = MathHelper.ceil((float)(maxX - minX - 2) * progress);
-        int colorFilled = LOADING_FILL.getAsInt();
-        int colorOutline = LOADING_BORDER.getAsInt();
+        int colorFilled = applyAlphaToColor(LOADING_FILL.getAsInt(), opacity);
+        int colorOutline = applyAlphaToColor(LOADING_BORDER.getAsInt(), opacity);
 
         fill(matrices, minX + 2, minY + 2, minX + filled, maxY - 2, colorFilled);
         fill(matrices, minX + 1, minY, maxX - 1, minY + 1, colorOutline);
@@ -171,7 +171,7 @@ public class SplashOverlayMixin {
                     MinecraftClient.getInstance().getWindow().getScaledWidth(), MinecraftClient.getInstance().getWindow().getScaledHeight(),
                     applyAlphaToColor(BRAND_ARGB.getAsInt(), 1.0f));
 
-            drawLoadingBar(matrices, fadeFactor, Math.max(loadingBarProgress, reload.getProgress()));
+            drawLoadingBar(matrices, fadeFactor, 1.0f);
             loadingBarProgress = reload.getProgress();
 
             if (fadeFactor <= 0.0) {
