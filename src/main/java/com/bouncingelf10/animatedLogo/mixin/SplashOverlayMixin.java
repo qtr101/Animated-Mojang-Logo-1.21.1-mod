@@ -278,7 +278,7 @@ public class SplashOverlayMixin {
         context.drawTexture(finalFrame, finalFrameX, finalFrameY, finalFrameWidth, finalFrameHeight, 0, finalSubFrameY, 1024, 256, 1024, 1024);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-        if (progress >= 0.99776595) { // idk why this isn't 1.0, but it works
+        if (alpha <= 0.0f) {
             HAS_LOADED_ONCE = true;
         }
 
