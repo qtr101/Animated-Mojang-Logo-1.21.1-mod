@@ -227,12 +227,7 @@ public class SplashOverlayMixin {
                     context.getScaledWindowWidth(), context.getScaledWindowHeight(),
                     applyAlphaToColor(BRAND_ARGB.getAsInt(), 1.0f));
 
-            RenderSystem.setShaderColor(
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), 1.0f) >> 16) & 0xFF) / 255.0f,
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), 1.0f) >> 8) & 0xFF) / 255.0f,
-                    (applyAlphaToColor(TEXT_COLOR.getAsInt(), 1.0f) & 0xFF) / 255.0f,
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), 1.0f) >> 24) & 0xFF) / 255.0f
-            );
+            setShaderColor(TEXT_COLOR.getAsInt(), 1.0f);
             context.drawTexture(frames[frameIndex], x, y, width, height, 0, subFrameY, 1024, 256, 1024, 1024);
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
@@ -253,12 +248,7 @@ public class SplashOverlayMixin {
         if (progress >= 0.8) {
             f = Math.min(alpha, f + 0.2f);
             int sw = (int) (width * 0.45);
-            RenderSystem.setShaderColor(
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 16) & 0xFF) / 255.0f,
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 8) & 0xFF) / 255.0f,
-                    (applyAlphaToColor(TEXT_COLOR.getAsInt(), f) & 0xFF) / 255.0f,
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 24) & 0xFF) / 255.0f
-            );
+            setShaderColor(TEXT_COLOR.getAsInt(), f);
             context.drawTexture(Identifier.of("animated-mojang-logo", "textures/gui/studios.png"), x - sw / 2, (int) (y - halfHeight + height - height / 12), sw, (int) (height / 5.0), 0, 0, 450, 50, 512, 512);
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
@@ -274,14 +264,19 @@ public class SplashOverlayMixin {
 
         Identifier finalFrame = frames[FRAMES - 1];
 
-        RenderSystem.setShaderColor(
-                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 16) & 0xFF) / 255.0f,
-                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 8) & 0xFF) / 255.0f,
-                (applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) & 0xFF) / 255.0f,
-                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 24) & 0xFF) / 255.0f
-        );
+        setShaderColor(TEXT_COLOR.getAsInt(), alpha);
         context.drawTexture(finalFrame, finalFrameX, finalFrameY, finalFrameWidth, finalFrameHeight, 0, finalSubFrameY, 1024, 256, 1024, 1024);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+    }
+
+    @Unique
+    private static void setShaderColor(int color, float alpha) {
+        RenderSystem.setShaderColor(
+                ((applyAlphaToColor(color, alpha) >> 16) & 0xFF) / 255.0f,
+                ((applyAlphaToColor(color, alpha) >> 8) & 0xFF) / 255.0f,
+                (applyAlphaToColor(color, alpha) & 0xFF) / 255.0f,
+                ((applyAlphaToColor(color, alpha) >> 24) & 0xFF) / 255.0f
+        );
     }
 
     @Unique
