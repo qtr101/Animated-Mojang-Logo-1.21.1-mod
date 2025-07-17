@@ -73,6 +73,8 @@ public class SplashOverlayMixin {
     @Unique private static final long FADE_OUT_DURATION_MS = 1000; // in milliseconds
     @Unique private static float loadingBarProgress = 0.0f; // in seconds
 
+    @Unique private static boolean HAS_LOADED_ONCE = false;
+
     // Draw vanilla loading bar
     // Copied from: net.minecraft.client.gui.screen.SplashOverlay.renderProgressBar
     @Unique
@@ -113,7 +115,7 @@ public class SplashOverlayMixin {
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;setShaderColor(FFFF)V", ordinal = 0),
             index = 3)
     private float removeText(float red) {
-        return 0;
+        return HAS_LOADED_ONCE ? red : 0;
     }
 
     // Stop rendering of loading bar
@@ -121,12 +123,16 @@ public class SplashOverlayMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screen/SplashOverlay;renderProgressBar(Lnet/minecraft/client/util/math/MatrixStack;IIIIF)V", ordinal = 0),
             index = 5)
     private float removeBar(float opacity) {
-        return 0.0f;
+        return HAS_LOADED_ONCE ? opacity : 0;
     }
 
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
     private void preRender(MatrixStack matrices, int mouseX, int mouseY, float delta, CallbackInfo ci) {
+        if (HAS_LOADED_ONCE) {
+            return;
+        }
+
         long elapsed = System.currentTimeMillis() - animationDelayStartTime;
 
         if (elapsed < ANIMATION_DELAY_MS) {
@@ -230,16 +236,21 @@ public class SplashOverlayMixin {
 
             RenderSystem.setShaderTexture(0, frames[frameIndex]);
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderColor(
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), 1.0f) >> 16) & 0xFF) / 255.0f,
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), 1.0f) >> 8) & 0xFF) / 255.0f,
-                    (applyAlphaToColor(TEXT_COLOR.getAsInt(), 1.0f) & 0xFF) / 255.0f,
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), 1.0f) >> 24) & 0xFF) / 255.0f
-            );
+            setShaderColor(TEXT_COLOR.getAsInt(), 1.0f);
 
             drawTexture(matrices, x, y, width, height, 0, subFrameY, 1024, 256, 1024, 1024);
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
+    }
+
+    @Unique
+    private static void setShaderColor(int color, float alpha) {
+        RenderSystem.setShaderColor(
+                ((applyAlphaToColor(color, alpha) >> 16) & 0xFF) / 255.0f,
+                ((applyAlphaToColor(color, alpha) >> 8) & 0xFF) / 255.0f,
+                (applyAlphaToColor(color, alpha) & 0xFF) / 255.0f,
+                ((applyAlphaToColor(color, alpha) >> 24) & 0xFF) / 255.0f
+        );
     }
 
     @Inject(
@@ -256,7 +267,7 @@ public class SplashOverlayMixin {
                                    @Local(ordinal = 3) float alpha, @Local(ordinal = 4) int x, @Local(ordinal = 5) int y,
                                    @Local(ordinal = 0) double height, @Local(ordinal = 6) int halfHeight,
                                    @Local(ordinal = 1) double width, @Local(ordinal = 7) int halfWidth) {
-        if (!animationDone) return;
+        if (!animationDone || HAS_LOADED_ONCE) return;
 
         // Studios.png
         float progress = MathHelper.clamp(this.progress * 0.95F + this.reload.getProgress() * 0.050000012F, 0.0F, 1.0F);
@@ -266,12 +277,7 @@ public class SplashOverlayMixin {
 
             RenderSystem.setShaderTexture(0, Identifier.of("animated-mojang-logo", "textures/gui/studios.png"));
             RenderSystem.setShader(GameRenderer::getPositionTexShader);
-            RenderSystem.setShaderColor(
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 16) & 0xFF) / 255.0f,
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 8) & 0xFF) / 255.0f,
-                    (applyAlphaToColor(TEXT_COLOR.getAsInt(), f) & 0xFF) / 255.0f,
-                    ((applyAlphaToColor(TEXT_COLOR.getAsInt(), f) >> 24) & 0xFF) / 255.0f
-            );
+            setShaderColor(TEXT_COLOR.getAsInt(), f);
             drawTexture(matrices, x - sw / 2, (int) (y - halfHeight + height - height / 12), sw, (int) (height / 5.0), 0, 0, 450, 50, 512, 512);
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         }
@@ -289,14 +295,15 @@ public class SplashOverlayMixin {
 
         RenderSystem.setShaderTexture(0, finalFrame);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderColor(
-                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 16) & 0xFF) / 255.0f,
-                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 8) & 0xFF) / 255.0f,
-                (applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) & 0xFF) / 255.0f,
-                ((applyAlphaToColor(TEXT_COLOR.getAsInt(), alpha) >> 24) & 0xFF) / 255.0f
-        );
+        setShaderColor(TEXT_COLOR.getAsInt(), alpha);
         drawTexture(matrices, finalFrameX, finalFrameY, finalFrameWidth, finalFrameHeight, 0, finalSubFrameY, 1024, 256, 1024, 1024);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+        LOGGER.info(String.valueOf(progress));
+
+        if (progress >= 0.871488) { // idk why this isn't 1.0, but it works
+            HAS_LOADED_ONCE = true;
+        }
     }
 
     @Unique
